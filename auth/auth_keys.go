@@ -3,6 +3,7 @@ package auth
 import (
 	"encoding/json"
 	"errors"
+	_ "fmt"
 	"github.com/fernet/fernet-go"
 	"io/ioutil"
 	_ "net/http"
@@ -27,7 +28,7 @@ func homeDir() (string, error) {
 }
 
 func persistKeys(keys []*fernet.Key) error {
-	dump := make([]string, *numberOfKeys)
+	dump := make([]string, len(keys))
 	if len(keys) > *numberOfKeys {
 		return errors.New("key count too big for setting")
 	}
@@ -49,7 +50,7 @@ func setPathDefaults() error {
 		return err
 	}
 	if *dataDir == "" {
-		*dataDir = path.Join(home, ".config", *dataDir)
+		*dataDir = path.Join(home, ".config", defaultDir)
 		authKeyFile = path.Join(*dataDir, "boring.keys")
 		err = os.MkdirAll(*dataDir, 0755)
 		if err != nil {
@@ -73,25 +74,36 @@ func RotateActiveKeys() error {
 	if err != nil {
 		return err
 	}
-	numKeys := len(activeKeys)
+	numKeys := *numberOfKeys
 	newKeys := make([]*fernet.Key, numKeys)
 	newKeys[0] = newKey
-	for i, k := range activeKeys {
-		if i == numKeys-1 {
-			continue
-		} else {
-			newKeys[i+1] = k
+	if numKeys == len(activeKeys) {
+		for i, k := range activeKeys {
+			if i == numKeys-1 {
+				continue
+			} else {
+				newKeys[i+1] = k
+			}
 		}
-	}
-	err = persistKeys(newKeys)
-	if err != nil {
+		err = persistKeys(newKeys)
+		if err != nil {
+			return err
+		}
+	} else {
+		// Rotating keys, when the new length is different from previous,
+		// will be in effect a reset
+		k, err := createKeys(*numberOfKeys)
+		if err != nil {
+			return err
+		}
+		err = persistKeys(k)
 		return err
 	}
 	return nil
 }
 
 func ResetKeys() error {
-	keys, err := createKeys()
+	keys, err := createKeys(*numberOfKeys)
 	if err != nil {
 		return err
 	}
@@ -102,9 +114,9 @@ func ResetKeys() error {
 	return nil
 }
 
-func createKeys() ([]*fernet.Key, error) {
-	keys := make([]*fernet.Key, *numberOfKeys)
-	for idx := 0; idx < *numberOfKeys; idx++ {
+func createKeys(n int) ([]*fernet.Key, error) {
+	keys := make([]*fernet.Key, n)
+	for idx := 0; idx < n; idx++ {
 		k := &fernet.Key{}
 		err := k.Generate()
 		if err != nil {
@@ -112,15 +124,11 @@ func createKeys() ([]*fernet.Key, error) {
 		}
 		keys[idx] = k
 	}
-	err := persistKeys(keys)
-	if err != nil {
-		return nil, err
-	}
 	return keys, nil
 }
 
 func loadKeys() ([]*fernet.Key, error) {
-	encodedKeys := make([]string, *numberOfKeys)
+	var encodedKeys []string
 	prevKeys, err := ioutil.ReadFile(authKeyFile)
 	if err != nil {
 		return nil, err
@@ -128,6 +136,9 @@ func loadKeys() ([]*fernet.Key, error) {
 	err = json.Unmarshal(prevKeys, &encodedKeys)
 	if err != nil {
 		return nil, err
+	}
+	if len(encodedKeys) != *numberOfKeys {
+		return nil, errors.New("cannot load sufficient")
 	}
 	decodedKeys := make([]*fernet.Key, *numberOfKeys)
 	for idx, val := range encodedKeys {

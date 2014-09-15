@@ -7,8 +7,9 @@ import (
 )
 
 var (
-	dataDir      = flag.String("data_dir", "boring_server", "specify location of session keys (default: ~/.config/boring-server/)")
-	configPrefix = flag.String("config_prefix", "BORING_SERVER_",
+	dataDir             = flag.String("data_dir", "", "specify location of session keys (default: ~/.config/boring-server/)")
+	defaultDir   string = "boring-server"
+	configPrefix        = flag.String("config_prefix", "BORING_SERVER_",
 		"prefix for config from environment variable, default BORING_SERVER_ (ie BORING_SERVER_DATA_DIR")
 	keyRotationInterval = flag.Float64("key_rotation_interval", 99.0, "hours per key rotation (session lifespan = number of keys * rotation interval)")
 	numberOfKeys        = flag.Int("number_of_keys", 3, "number of keys, defaults to 3")
@@ -25,14 +26,24 @@ func init() {
 	if dataDirFromEnv != "" {
 		*dataDir = dataDirFromEnv
 	}
-	setPathDefaults()
-	initDb()
-	if authKeyFile == "" {
-		panic("no keys available")
-	}
-	var err error
-	activeKeys, err = loadKeys()
+	err := setPathDefaults()
 	if err != nil {
 		panic(err)
 	}
+	if authKeyFile == "" {
+		panic("no keys available")
+	}
+	activeKeys, err = loadKeys()
+	if err != nil {
+		activeKeys, err = createKeys(*numberOfKeys)
+		if err != nil {
+			panic(err)
+		} else {
+			err = persistKeys(activeKeys)
+			if err != nil {
+				panic(err)
+			}
+		}
+	}
+	initDb()
 }

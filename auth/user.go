@@ -3,14 +3,13 @@ package auth
 import (
 	"code.google.com/p/go.crypto/bcrypt"
 	"encoding/json"
-	seq "github.com/streadway/simpleuuid"
 	"net/http"
 	"time"
 )
 
 type User struct {
 	EncryptedPassword string                 `json:-`
-	Uuid              seq.UUID               `json:uuid`
+	Uuid              string                 `json:uuid`
 	UniqueName        string                 `json:name`
 	Email             string                 `json:-`
 	Admin             bool                   `json:adm`
@@ -18,10 +17,6 @@ type User struct {
 	Active            bool                   `json:-`
 	LastSeen          time.Time              `json:-`
 	Meta              map[string]interface{} `json:-`
-}
-
-func (u *User) invite() {
-
 }
 
 func (u *User) Cookie() (*http.Cookie, error) {
@@ -37,19 +32,18 @@ func (u *User) Cookie() (*http.Cookie, error) {
 	return cookie, nil
 }
 
-func getSession(r *http.Request) (u *User) {
+func getSession(r *http.Request) (u User) {
 	cookie, err := r.Cookie(*cookieName)
 	if err != nil {
-		return nil
+		return u
 	}
 	msg := decode(cookie.Value)
 	if msg == nil {
-		return nil
+		return u
 	}
 	err = json.Unmarshal(msg, &u)
 	if err != nil {
-		u = nil
-		return nil
+		return u
 	}
 	return u
 }
