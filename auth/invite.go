@@ -24,3 +24,7 @@ func NewUserInvitation(email string, admin bool, trust int) (*User, string, erro
 	}
 	return u, inviteText, nil
 }
+
+func FirstRunInvitation() (*User, string, error) {
+	return NewUserInvitation("admin", true, 1e9)
+}

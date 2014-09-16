@@ -1,11 +1,24 @@
 {{ template "layout" }}
 
-<form action="" method="POST">
+<form id=login action="" method="POST">
 Chosen name: <input type="text" name="chosen_name" />
 Password: <input type="password" name="password" />
 <button type="submit">Submit</button>
 </form>
 
 <script>
+
+function getURLParameter(name) {
+    return decodeURIComponent((new RegExp('[?|&]' + name + '=' + '([^&;]+?)(&|#|;|$)').exec(location.search)||[,""])[1].replace(/\+/g, '%20'))||null;
+}
+
+(function () {
+  if (window.location.search.indexOf('invite=') !== -1) {
+    var invite = getURLParameter("invite"),
+        loginForm = document.querySelector("#login"),
+        action = loginForm.getAttribute("action"),
+        post = (action.length > 0)? action + '&invite='+invite: action+'?='+invite;
+    loginForm.setAttribute("action", post);
+})();
 
 </script>

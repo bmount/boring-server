@@ -25,7 +25,7 @@ func (u *User) Cookie() (*http.Cookie, error) {
 		return nil, err
 	}
 	cookie := &http.Cookie{
-		Name:  *cookieName,
+		Name:  cookieName,
 		Value: encoded,
 		Path:  "/",
 	}
@@ -33,7 +33,7 @@ func (u *User) Cookie() (*http.Cookie, error) {
 }
 
 func getSession(r *http.Request) (u User) {
-	cookie, err := r.Cookie(*cookieName)
+	cookie, err := r.Cookie(cookieName)
 	if err != nil {
 		return u
 	}
@@ -79,10 +79,5 @@ func (u *User) CreatePasswordHash(pw string) (err error) {
 	}
 	u.EncryptedPassword = string(hash)
 	err = nil
-	return
-}
-
-func BaseQuery() (bq string) {
-	bq = `select ... `
 	return
 }

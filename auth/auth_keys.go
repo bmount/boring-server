@@ -7,9 +7,7 @@ import (
 	"github.com/fernet/fernet-go"
 	"io/ioutil"
 	_ "net/http"
-	"os"
 	"os/user"
-	"path"
 )
 
 var authKeyFile string
@@ -29,7 +27,7 @@ func homeDir() (string, error) {
 
 func persistKeys(keys []*fernet.Key) error {
 	dump := make([]string, len(keys))
-	if len(keys) > *numberOfKeys {
+	if len(keys) > numberOfKeys {
 		return errors.New("key count too big for setting")
 	}
 	for idx, key := range keys {
@@ -44,37 +42,13 @@ func persistKeys(keys []*fernet.Key) error {
 	return err
 }
 
-func setPathDefaults() error {
-	home, err := homeDir()
-	if err != nil {
-		return err
-	}
-	if *dataDir == "" {
-		*dataDir = path.Join(home, ".config", defaultDir)
-		authKeyFile = path.Join(*dataDir, "boring.keys")
-		err = os.MkdirAll(*dataDir, 0755)
-		if err != nil {
-			return err
-		}
-		return nil
-	} else {
-		err = os.MkdirAll(*dataDir, 0755)
-		if err != nil {
-			return err
-		}
-		authKeyFile = path.Join(*dataDir, "boring.keys")
-		return nil
-	}
-	return nil
-}
-
 func RotateActiveKeys() error {
 	newKey := &fernet.Key{}
 	err := newKey.Generate()
 	if err != nil {
 		return err
 	}
-	numKeys := *numberOfKeys
+	numKeys := numberOfKeys
 	newKeys := make([]*fernet.Key, numKeys)
 	newKeys[0] = newKey
 	if numKeys == len(activeKeys) {
@@ -92,7 +66,7 @@ func RotateActiveKeys() error {
 	} else {
 		// Rotating keys, when the new length is different from previous,
 		// will be in effect a reset
-		k, err := createKeys(*numberOfKeys)
+		k, err := createKeys(numberOfKeys)
 		if err != nil {
 			return err
 		}
@@ -103,7 +77,7 @@ func RotateActiveKeys() error {
 }
 
 func ResetKeys() error {
-	keys, err := createKeys(*numberOfKeys)
+	keys, err := createKeys(numberOfKeys)
 	if err != nil {
 		return err
 	}
@@ -137,10 +111,10 @@ func loadKeys() ([]*fernet.Key, error) {
 	if err != nil {
 		return nil, err
 	}
-	if len(encodedKeys) != *numberOfKeys {
+	if len(encodedKeys) != numberOfKeys {
 		return nil, errors.New("cannot load sufficient")
 	}
-	decodedKeys := make([]*fernet.Key, *numberOfKeys)
+	decodedKeys := make([]*fernet.Key, numberOfKeys)
 	for idx, val := range encodedKeys {
 		decodedKey, err := fernet.DecodeKey(val)
 		if err != nil {

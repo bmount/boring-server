@@ -12,11 +12,11 @@ import (
 
 var db *bolt.DB
 
-func initDb() {
+func initDb() error {
 	var err error
-	db, err = bolt.Open(path.Join(*dataDir, *dbName), 0644, nil)
+	db, err = bolt.Open(path.Join(dataDir, dbName), 0644, nil)
 	if err != nil {
-		panic("unable to access user db")
+		return errors.New("unable to access user db")
 	}
 	err = db.Update(func(tx *bolt.Tx) error {
 		var err error
@@ -31,11 +31,8 @@ func initDb() {
 		return err
 	})
 	if err != nil {
-		panic(err)
+		return err
 	}
-}
-
-func (u *User) Retrieve() error {
 	return nil
 }
 

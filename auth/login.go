@@ -14,8 +14,8 @@ var templates = template.Must(template.ParseGlob("./auth/templates/**.tmpl"))
 func LoginByName(name, givenPw string) (error, *User) {
 	u := &User{UniqueName: name}
 	u, err := (&u).Load()
-	fmt.Println("in LoginByName, user pw hash is", u.EncryptedPassword)
-	if err != nil {
+	//fmt.Println("in LoginByName, user pw hash is", u.EncryptedPassword)
+	if err != nil || u == nil {
 		return errors.New("unauthorized"), nil
 	}
 	authed := bcrypt.CompareHashAndPassword([]byte(u.EncryptedPassword), []byte(givenPw))
@@ -75,7 +75,6 @@ func Login(w http.ResponseWriter, r *http.Request) {
 		var err error
 		if invitation != "" {
 			u, err = acceptInvite(chosenName, pw, invitation)
-			fmt.Println("chosenName, pw", chosenName, pw)
 			if err != nil {
 				fmt.Println(err)
 				http.Error(w, "invitation error", http.StatusUnauthorized)
