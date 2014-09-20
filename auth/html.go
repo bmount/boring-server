@@ -1,9 +1,30 @@
-{{ template "layout" }}
+package auth
 
+func mkHtml(body string) string {
+	return `<!DOCTYPE html>
+	<meta charset="utf-8">
+	<body>
+	<style>
+	* {
+		-webkit-box-sizing: border-box;
+		-moz-box-sizing: border-box;
+		box-sizing: border-box;
+	}
+	</style>
+	` + body
+}
+
+const loginForm = `
 <form id=login action="" method="POST">
-Chosen name: <input type="text" name="chosen_name" />
-Password: <input type="password" name="password" />
-<button type="submit">Submit</button>
+	Name or email:
+	<p>
+		<input type="text" name="user_name" />
+	</p>
+	Password:	
+	<p>
+		<input type="password" name="password" />
+	</p>
+	<button type="submit">Submit</button>
 </form>
 
 <script>
@@ -16,9 +37,10 @@ function getURLParameter(name) {
   if (window.location.search.indexOf('invite=') !== -1) {
     var invite = getURLParameter("invite"),
         loginForm = document.querySelector("#login"),
-        action = loginForm.getAttribute("action"),
-        post = (action.length > 0)? action + '&invite='+invite: action+'?='+invite;
+        post = window.location+'?='+invite;
     loginForm.setAttribute("action", post);
 })();
 
 </script>
+
+`
