@@ -23,6 +23,10 @@ func LoginByName(name, givenPw string) (error, *User) {
 
 func acceptInvite(userName, pw, invitation string) (*User, error) {
 	var u *User
+	takenName := dbget("user-name", userName)
+	if takenName != nil {
+		return nil, errors.New("name taken")
+	}
 	userBits := decode(invitation)
 	if userBits != nil && pw != "" {
 		err := json.Unmarshal(userBits, &u)
@@ -46,7 +50,7 @@ func acceptInvite(userName, pw, invitation string) (*User, error) {
 		if err != nil {
 			return nil, err
 		} else {
-			return u, u.Save()
+			return u, nil
 		}
 	}
 	return nil, errors.New("invalid invitation")
@@ -54,7 +58,7 @@ func acceptInvite(userName, pw, invitation string) (*User, error) {
 
 func Login(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "GET" {
-		fmt.Fprintf(w, mkHtml(loginForm))
+		fmt.Fprintf(w, mkHtml(LoginForm))
 		return
 	}
 
@@ -100,7 +104,7 @@ func Login(w http.ResponseWriter, r *http.Request) {
 func Signup(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case "GET":
-		fmt.Fprintf(w, mkHtml(loginForm))
+		fmt.Fprintf(w, mkHtml(LoginForm))
 		return
 	case "POST":
 		userName := r.FormValue("user_name")

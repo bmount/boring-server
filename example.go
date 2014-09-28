@@ -19,12 +19,13 @@ var (
 // Wrappable admin rule:
 var adminRule = &auth.Rule{Admin: true}
 
+// Wrappable "logged in" rule
 var sharedByInvitation = &auth.Rule{Trust: 5}
 
 func main() {
 	flag.Parse()
 
-	// initialize with a local db at ~/.config/boring-server ...
+	// initialize with a local db at ~/.config/boring-server/...
 	// use auth.NewWithOpts for non-defaults
 	err := auth.New()
 	if err != nil {

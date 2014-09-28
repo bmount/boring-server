@@ -3,6 +3,7 @@ package auth
 import (
 	"code.google.com/p/go.crypto/bcrypt"
 	"encoding/json"
+	seq "github.com/streadway/simpleuuid"
 	"net/http"
 	"time"
 )
@@ -58,16 +59,21 @@ func (u *User) setSession(w http.ResponseWriter) (err error) {
 }
 
 func (u *User) overwriteSession(w http.ResponseWriter) error {
-	/* err := http.SetCookie(w, &http.Cookie{
-		Name:  *cookieName,
+	http.SetCookie(w, &http.Cookie{
+		Name:  cookieName,
 		Value: "thanks_for_visiting",
 		Path:  "/",
-	}) */
+	})
 	return nil
 }
 
 func NewUser(email, password string, admin bool, trust int) (u *User, err error) {
 	u = &User{Admin: admin, Trust: trust, Email: email}
+	uid, err := seqUid()
+	if err != nil {
+		return nil, err
+	}
+	u.Uuid = uid
 	err = u.CreatePasswordHash(password)
 	return
 }
@@ -80,4 +86,12 @@ func (u *User) CreatePasswordHash(pw string) (err error) {
 	u.EncryptedPassword = string(hash)
 	err = nil
 	return
+}
+
+func seqUid() (string, error) {
+	uid, err := seq.NewTime(time.Now())
+	if err != nil {
+		return "", err
+	}
+	return uid.String(), nil
 }

@@ -58,12 +58,11 @@ func deserializeUser(bits []byte) *User {
 	return u
 }
 
-func dbput(bucket string, k []byte, v []byte) error {
+func dbput(bucket, k string, v []byte) error {
 	err := db.Update(func(tx *bolt.Tx) error {
 		b := tx.Bucket([]byte(bucket))
-		err := b.Put(k, v)
+		err := b.Put([]byte(k), []byte(v))
 		if err != nil {
-			fmt.Println("dbput err:", err, k, v)
 			return err
 		}
 		return nil
@@ -71,11 +70,11 @@ func dbput(bucket string, k []byte, v []byte) error {
 	return err
 }
 
-func dbget(bucket string, k []byte) []byte {
+func dbget(bucket, k string) []byte {
 	var rv []byte
 	_ = db.View(func(tx *bolt.Tx) error {
 		b := tx.Bucket([]byte(bucket))
-		rv = b.Get(k)
+		rv = b.Get([]byte(k))
 		return nil
 	})
 	return rv
@@ -86,16 +85,15 @@ func (u *User) Save() (err error) {
 	if bits == nil {
 		return errors.New("unlikely serialization error")
 	}
-	fmt.Println("uuid", u.Uuid, "bits", bits)
-	err = dbput("users", []byte(u.Uuid), bits)
+	err = dbput("users", u.Uuid, bits)
 	if err != nil {
-		fmt.Println("save user err, ", err)
-		return err // tx.Rollback()
+		return err
 	}
-	err = dbput("user-name", []byte(u.UniqueName), bits)
-	if err != nil {
-		log.Println("skipping invite-related name index err: ", err)
-		return nil
+	if u.UniqueName != "" {
+		err = dbput("user-name", u.UniqueName, bits)
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -138,14 +136,13 @@ func (u *User) ChangeName(newName string) error {
 }
 
 func (u *User) Load() (*User, error) {
-	fmt.Println("in load", *u, u.Uuid)
 	if u.Uuid == "" && u.UniqueName == "" {
 		return nil, errors.New("uninitialized")
 	}
 	var bits []byte
 	var namebits []byte
-	bits = dbget("users", []byte(u.Uuid))
-	namebits = dbget("user-name", []byte(u.UniqueName))
+	bits = dbget("users", u.Uuid)
+	namebits = dbget("user-name", u.UniqueName)
 	if bits == nil && namebits == nil {
 		return nil, errors.New("no user")
 	}
@@ -153,6 +150,5 @@ func (u *User) Load() (*User, error) {
 		bits = namebits
 	}
 	fullUser := deserializeUser(bits)
-	fmt.Println("fullUser", fullUser)
 	return fullUser, nil
 }

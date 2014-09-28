@@ -1,19 +1,20 @@
 package auth
 
 import (
-	"fmt"
-	seq "github.com/streadway/simpleuuid"
-	"time"
+	"errors"
+	"github.com/boltdb/bolt"
 )
 
 func NewUserInvitation(email string, admin bool, trust int) (*User, string, error) {
+	// Email can be anything (handle, empty, etc.), it's here
+	// as a way to keep track of outstanding invites without
+	// setting names in advance
 	u := &User{Email: email, Admin: admin, Trust: trust}
-	uid, err := seq.NewTime(time.Now())
+	uid, err := seqUid()
 	if err != nil {
-		return u, "", err
+		return nil, "", err
 	}
-	u.Uuid = uid.String()
-	fmt.Println("generating user in NewUserInvitation", u, "new invite uid", string(u.Uuid), "with fn call", uid.String())
+	u.Uuid = uid
 	err = u.Save()
 	if err != nil {
 		return nil, "", err
@@ -25,6 +26,23 @@ func NewUserInvitation(email string, admin bool, trust int) (*User, string, erro
 	return u, inviteText, nil
 }
 
-func FirstRunInvitation() (*User, string, error) {
+func FirstRunInvitation(rootUser string) (*User, string, error) {
+	preexisting := true
+	db.View(func(tx *bolt.Tx) error {
+		b := tx.Bucket([]byte("users"))
+		c := b.Cursor()
+		u0, _ := c.First()
+		if u0 != nil {
+			return errors.New("root account already set up")
+		}
+		preexisting = false
+		return nil
+	})
+	if preexisting {
+		return nil, "", errors.New("first run unavailable, users exist")
+	}
+	if rootUser == "" {
+		return nil, "", errors.New("root username must not be empty string")
+	}
 	return NewUserInvitation("admin", true, 1e9)
 }

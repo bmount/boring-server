@@ -14,7 +14,7 @@ func mkHtml(body string) string {
 	` + body
 }
 
-const loginForm = `
+const LoginForm = `
 <form id=login action="" method="POST">
 	Name or email:
 	<p>

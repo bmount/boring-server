@@ -16,7 +16,7 @@ var loginHandler *http.ServeMux
 
 func loginPage(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "GET" {
-		fmt.Fprintf(w, loginForm)
+		fmt.Fprintf(w, LoginForm)
 		return
 	}
 	if r.Method == "POST" {

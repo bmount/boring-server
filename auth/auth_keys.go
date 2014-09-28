@@ -65,7 +65,7 @@ func RotateActiveKeys() error {
 		}
 	} else {
 		// Rotating keys, when the new length is different from previous,
-		// will be in effect a reset
+		// will reset all
 		k, err := createKeys(numberOfKeys)
 		if err != nil {
 			return err
