@@ -63,7 +63,7 @@ func Login(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if r.Method == "POST" {
-		userName := r.FormValue("user_name")
+		userName := r.FormValue("username")
 		pw := r.FormValue("password")
 		//pwc := r.FormValue("password_confirm")
 		invitation := r.FormValue("invite")
@@ -81,7 +81,8 @@ func Login(w http.ResponseWriter, r *http.Request) {
 
 		err, u = LoginByName(userName, pw)
 		if err != nil {
-			http.Error(w, "invalid username/password", http.StatusUnauthorized)
+			//http.Error(w, "invalid username/password", http.StatusUnauthorized)
+			fmt.Fprintf(w, "no")
 			return
 		}
 		err = u.setSession(w)
@@ -107,7 +108,7 @@ func Signup(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintf(w, mkHtml(LoginForm))
 		return
 	case "POST":
-		userName := r.FormValue("user_name")
+		userName := r.FormValue("username")
 		invitation := r.FormValue("invite")
 		if userName == "" || invitation == "" {
 			http.Redirect(w, r, "/", 302)

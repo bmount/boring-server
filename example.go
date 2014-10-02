@@ -1,13 +1,14 @@
 package main
 
 import (
-	"./auth"
 	"encoding/json"
 	"flag"
 	"fmt"
+	"github.com/bmount/boring-server/auth"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
+	"os/user"
 	"strconv"
 )
 
@@ -35,7 +36,14 @@ func main() {
 	if *firstRun {
 		// can only be run once, initial user name will be 'admin',
 		// password set on invitation acceptance
-		fmt.Println(auth.FirstRunInvitation())
+		var username string
+		u, err := user.Current()
+		if err != nil {
+			username = "admin"
+		} else {
+			username = u.Name
+		}
+		fmt.Println(auth.FirstRunInvitation(username))
 	}
 
 	// Usually, we're just a static server

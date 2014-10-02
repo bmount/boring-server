@@ -18,7 +18,7 @@ const LoginForm = `
 <form id=login action="" method="POST">
 	Name or email:
 	<p>
-		<input type="text" name="user_name" />
+		<input type="text" name="username" />
 	</p>
 	Password:	
 	<p>

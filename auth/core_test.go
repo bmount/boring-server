@@ -5,6 +5,9 @@ import (
 	"flag"
 	"fmt"
 	"github.com/fernet/fernet-go"
+	"net/http"
+	"net/http/httptest"
+	"net/url"
 	"os"
 	"os/exec"
 	"testing"
@@ -38,10 +41,14 @@ func firstRunTest() {
 		panic(err)
 	}
 	if invite == "" {
-		fmt.Errorf("Initializatoin error: Root user invitation not generated: %v\n", err)
+		fmt.Errorf("Initialization error: Root user invitation not generated: %v", err)
 		panic(err)
 	}
-
+	retryUser, retryInvitationString, retryErr := FirstRunInvitation("admin")
+	if retryErr == nil || retryUser != nil || retryInvitationString != "" {
+		fmt.Errorf("First run invitaition may be run at most once")
+		panic("more than one initial admin user created")
+	}
 }
 
 func TestKeyRotation(t *testing.T) {
@@ -79,7 +86,32 @@ func TestKeyRotation(t *testing.T) {
 	if doesHave != shouldHave {
 		t.Errorf("Expected 0 old keys to remain, got %v\n", doesHave)
 	}
+	clonedKeysPostReset := make(map[*fernet.Key]bool)
+	for _, k := range activeKeys {
+		clonedKeysPostReset[k] = true
+	}
+	numberOfKeys = numberOfKeys * 2
+	// Key rotation on change in key number should cycle all
+	err = RotateActiveKeys()
+	if err != nil {
+		t.Errorf("error in second key rotation: %v\n", err)
+	}
+	for _, k := range activeKeys {
+		if clonedKeysPostReset[k] {
+			t.Errorf("Rotating after key count change failed to reset all")
+		}
+	}
+}
 
+func TestLoadKeys(t *testing.T) {
+	// this is tested indirectly in init, simply:
+	keys, err := loadKeys()
+	if err != nil {
+		t.Error(err)
+	}
+	if len(keys) != numberOfKeys {
+		t.Errorf("Load keys failed to retrieve expected number")
+	}
 }
 
 func TestKeyCount(t *testing.T) {
@@ -108,7 +140,38 @@ func TestInvitations(t *testing.T) {
 	if err == nil {
 		t.Errorf("Invite not independent of chosen name")
 	}
-
+	var successMsg = "ENTERED"
+	var protectedEndpoint = Wrap(http.HandlerFunc(
+		func(w http.ResponseWriter, r *http.Request) {
+			fmt.Println(*r)
+			fmt.Fprintf(w, successMsg)
+			return
+		}), &Rule{Admin: true})
+	ts := httptest.NewServer(protectedEndpoint)
+	defer ts.Close()
+	res, err := http.Get(ts.URL + "/any/thing")
+	if err != nil || res.StatusCode != 200 {
+		fmt.Println(res, err)
+		t.Errorf("failed to load login page to unauthenticated user")
+	}
+	res, err = http.PostForm(ts.URL+"/any/thing", url.Values{"username": {"bmount"}, "password": {"s3cr3t"}})
+	if res == nil {
+		t.Error(err)
+		return
+	}
+	fmt.Printf("%v: %v \t cookies: %v\n", res.StatusCode, res, res.Cookies())
+	if res.StatusCode != 200 {
+		t.Errorf("A valid username/pass was not accepted")
+	}
+	res, err = http.PostForm(ts.URL+"/any/thing", url.Values{"username": {"changed-bmounts-name"}, "password": {"super-secret-squared"}})
+	if res == nil {
+		t.Error(err)
+		return
+	}
+	//fmt.Printf("shouldnt: %v %v\n", res.Status, res)
+	if res.StatusCode == 200 {
+		t.Errorf("The invalid change was accepted/ unauthorized invite")
+	}
 }
 
 func TestTokenCompatibility(t *testing.T) {
