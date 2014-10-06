@@ -14,7 +14,7 @@ import (
 
 var (
 	firstRun = flag.Bool("first_run", false, "print an initial admin invitation")
-	listenOn = flag.String("listen_on", "127.0.0.1:9090", "host:port")
+	bind     = flag.String("listen_on", "127.0.0.1:9090", "host:port")
 )
 
 // Wrappable admin rule:
@@ -34,8 +34,8 @@ func main() {
 	}
 
 	if *firstRun {
-		// can only be run once, initial user name will be 'admin',
-		// password set on invitation acceptance
+		// can only be run once, initial user name will be system user or
+		//'admin' if unavailable, password set on invitation acceptance
 		var username string
 		u, err := user.Current()
 		if err != nil {
@@ -59,10 +59,6 @@ func main() {
 	http.Handle("/private-files/", auth.Wrap(http.FileServer(
 		http.Dir("./private-files/")), adminRule))
 
-	// Viewing /amigos/... requires an invite with trust >= 5
-	http.Handle("/amigos/", auth.Wrap(http.HandlerFunc(amigos),
-		&auth.Rule{Trust: 5}))
-
 	// A nice HTTP API we put behind our auth layer
 	var couchDB *httputil.ReverseProxy
 	couchUrl, _ := url.Parse("http://localhost:5984")
@@ -70,7 +66,7 @@ func main() {
 	http.Handle("/couchdb/", auth.Wrap(http.StripPrefix("/couchdb/", couchDB),
 		adminRule))
 
-	http.ListenAndServe(*listenOn, nil)
+	http.ListenAndServe(*bind, nil)
 }
 
 func generallyPublic(w http.ResponseWriter, r *http.Request) {
@@ -80,11 +76,6 @@ func generallyPublic(w http.ResponseWriter, r *http.Request) {
 
 func showToAdmins(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "hello admin")
-	return
-}
-
-func amigos(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintf(w, "el club de los inútiles")
 	return
 }
 

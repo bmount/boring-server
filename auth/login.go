@@ -65,7 +65,6 @@ func Login(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "POST" {
 		userName := r.FormValue("username")
 		pw := r.FormValue("password")
-		//pwc := r.FormValue("password_confirm")
 		invitation := r.FormValue("invite")
 		var u *User
 		var err error
@@ -75,14 +74,14 @@ func Login(w http.ResponseWriter, r *http.Request) {
 				http.Error(w, "invitation error", http.StatusUnauthorized)
 				return
 			}
-			fmt.Fprintf(w, "welcome")
+			u.setSession(w)
+			http.Redirect(w, r, r.URL.Path, 302)
 			return
 		}
 
 		err, u = LoginByName(userName, pw)
 		if err != nil {
-			//http.Error(w, "invalid username/password", http.StatusUnauthorized)
-			fmt.Fprintf(w, "no")
+			http.Error(w, "invalid username/password", http.StatusUnauthorized)
 			return
 		}
 		err = u.setSession(w)
@@ -93,49 +92,5 @@ func Login(w http.ResponseWriter, r *http.Request) {
 			http.Redirect(w, r, "/", 302)
 			return
 		}
-	}
-
-	if r.Method == "DELETE" {
-		u := &User{}
-		u.overwriteSession(w)
-		http.Redirect(w, r, "/", 302)
-	}
-}
-
-func Signup(w http.ResponseWriter, r *http.Request) {
-	switch r.Method {
-	case "GET":
-		fmt.Fprintf(w, mkHtml(LoginForm))
-		return
-	case "POST":
-		userName := r.FormValue("username")
-		invitation := r.FormValue("invite")
-		if userName == "" || invitation == "" {
-			http.Redirect(w, r, "/", 302)
-		}
-		invite := decode(invitation)
-		if invite == nil {
-			http.Redirect(w, r, "/", 302)
-			return
-		}
-		var u *User
-		err := json.Unmarshal(invite, &u)
-		if err != nil {
-			http.Error(w, "expired or invalid invitation", http.StatusUnauthorized)
-			return
-		}
-		password := r.FormValue("password")
-		if password == "" {
-			http.Redirect(w, r, "/", 302)
-			return
-		}
-		err = u.Save()
-		if err != nil {
-			http.Error(w, "server error", http.StatusInternalServerError)
-			return
-		}
-		_ = u.setSession(w)
-		http.Redirect(w, r, "/", 302)
-		return
 	}
 }

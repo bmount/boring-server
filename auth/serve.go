@@ -1,7 +1,6 @@
 package auth
 
 import (
-	"fmt"
 	"net/http"
 )
 
@@ -13,18 +12,6 @@ type Rule struct {
 }
 
 var loginHandler *http.ServeMux
-
-func loginPage(w http.ResponseWriter, r *http.Request) {
-	if r.Method == "GET" {
-		fmt.Fprintf(w, LoginForm)
-		return
-	}
-	if r.Method == "POST" {
-		//invite := r.FormValue("invite")
-
-	}
-	http.Error(w, "not allowed", http.StatusMethodNotAllowed)
-}
 
 func Wrap(h http.Handler, rule *Rule) http.Handler {
 	if loginHandler == nil {

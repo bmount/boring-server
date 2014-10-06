@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"github.com/boltdb/bolt"
-	"log"
 	"path"
 )
 
@@ -114,20 +113,17 @@ func (u *User) ChangeName(newName string) error {
 		val := u.Serialize()
 		err := userStore.Put([]byte(u.Uuid), val)
 		if err != nil {
-			log.Println(err)
-			return tx.Rollback()
+			return err
 		}
 		err = userNameIdx.Put([]byte(newName), val)
 		if err != nil {
-			log.Println(err)
-			return tx.Rollback()
+			return err
 		}
 		err = userNameIdx.Delete([]byte(oldName))
 		if err != nil {
-			log.Println(err)
-			return tx.Rollback()
+			return err
 		}
-		return tx.Commit()
+		return nil
 	})
 	if err != nil {
 		return err

@@ -26,9 +26,10 @@ func (u *User) Cookie() (*http.Cookie, error) {
 		return nil, err
 	}
 	cookie := &http.Cookie{
-		Name:  cookieName,
-		Value: encoded,
-		Path:  "/",
+		Name:     cookieName,
+		Value:    encoded,
+		Path:     "/",
+		HttpOnly: true,
 	}
 	return cookie, nil
 }
@@ -58,11 +59,12 @@ func (u *User) setSession(w http.ResponseWriter) (err error) {
 	return
 }
 
-func (u *User) overwriteSession(w http.ResponseWriter) error {
+func (u *User) OverwriteSession(w http.ResponseWriter) error {
 	http.SetCookie(w, &http.Cookie{
-		Name:  cookieName,
-		Value: "thanks_for_visiting",
-		Path:  "/",
+		Name:     cookieName,
+		Value:    "thanks_for_visiting",
+		Path:     "/",
+		HttpOnly: true,
 	})
 	return nil
 }
